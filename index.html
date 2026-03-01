@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocket to the Moon</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- HUD -->
+        <div id="hud">
+            <div class="hud-item fuel-container">
+                <span>Топливо:</span>
+                <div id="fuel-bar-bg">
+                    <div id="fuel-bar-fill"></div>
+                </div>
+            </div>
+            <div class="hud-item score-container">
+                <div id="current-score">Очки: 0</div>
+                <div id="high-score">Рекорд: 0</div>
+            </div>
+            <div class="hud-item stage-container">
+                <span id="stage-name">Стратосфера</span>
+                <div id="distance-bar-bg">
+                    <div id="distance-bar-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Volume Control -->
+        <div id="volume-control">
+            <label for="volume-range">Громкость</label>
+            <input id="volume-range" type="range" min="0" max="100" value="70">
+        </div>
+
+        <!-- Игровое поле -->
+        <canvas id="gameCanvas" width="400" height="700"></canvas>
+
+        <!-- Стартовый экран -->
+        <div id="start-screen" class="overlay">
+            <h1>Rocket to the Moon</h1>
+            <p>Управление:</p>
+            <p>← → : Движение влево/вправо</p>
+            <p>↑ : Ускорение (тратит больше топлива)</p>
+            <button id="start-btn" class="game-btn">ИГРАТЬ</button>
+        </div>
+
+        <!-- Экран поражения -->
+        <div id="game-over-screen" class="overlay hidden">
+            <h1 id="death-reason">СТОЛКНОВЕНИЕ!</h1>
+            <p>Ваш результат: <span id="final-score">0</span></p>
+            <p>Лучший результат: <span id="best-score">0</span></p>
+            <button id="restart-btn" class="game-btn">ИГРАТЬ СНОВА</button>
+        </div>
+
+        <!-- Экран победы -->
+        <div id="win-screen" class="overlay hidden">
+            <h1 style="color: #FFD700;">ПОБЕДА!</h1>
+            <p>Вы успешно долетели до Луны!</p>
+            <p>Итоговый результат: <span id="win-final-score">0</span></p>
+            <p>Лучший результат: <span id="win-best-score">0</span></p>
+            <button id="restart-win-btn" class="game-btn">ИГРАТЬ СНОВА</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
