@@ -70,8 +70,8 @@ const ROCKET_WIDTH = 22;
 const ROCKET_HEIGHT = 60;
 const FUEL_CONSUMPTION_BASE = 0.03;
 const FUEL_CONSUMPTION_BOOST = 0.1;
-const BASE_SCROLL_SPEED = 1.5;
-const BOOST_SCROLL_SPEED = 4;
+const BASE_SCROLL_SPEED = 1.8;
+const BOOST_SCROLL_SPEED = 4.5;
 const WIN_DISTANCE = 4000; // СОКРАЩЕНО ЕЩЕ: Было 6000
 // Game State
 let gameState = 'START'; // START, PLAYING, GAMEOVER, WIN
@@ -306,9 +306,9 @@ function checkCollision(rect1, rect2, isRocket = false) {
 }
 
 // Update Logic
-function update() {
+function update(dt = 1) {
     if (explosionActive) {
-        explosionTimer--;
+        explosionTimer -= dt;
         if (explosionTimer <= 0) {
             explosionActive = false;
         }
@@ -329,14 +329,14 @@ function update() {
     scrollSpeed = rocket.isBoosting ? BOOST_SCROLL_SPEED : BASE_SCROLL_SPEED;
 
     // Move Rocket
-    rocket.x += rocket.dx;
+    rocket.x += rocket.dx * dt;
 
     // Boundaries
     if (rocket.x < 0) rocket.x = 0;
     if (rocket.x + rocket.w > CANVAS_WIDTH) rocket.x = CANVAS_WIDTH - rocket.w;
 
     // Fuel Logic
-    const consumption = rocket.isBoosting ? FUEL_CONSUMPTION_BOOST : FUEL_CONSUMPTION_BASE;
+    const consumption = (rocket.isBoosting ? FUEL_CONSUMPTION_BOOST : FUEL_CONSUMPTION_BASE) * dt;
     fuel -= consumption;
     if (fuel <= 0) {
         fuel = 0;
@@ -345,8 +345,8 @@ function update() {
     }
 
     // Progress & Stage
-    progress += scrollSpeed * 0.1;
-    score += scrollSpeed * 0.05;
+    progress += scrollSpeed * 0.1 * dt;
+    score += scrollSpeed * 0.05 * dt;
 
     // Check Win Condition
     if (progress >= WIN_DISTANCE) {
@@ -358,7 +358,7 @@ function update() {
 
     // Update Stars
     stars.forEach(star => {
-        star.y += scrollSpeed * star.speed;
+        star.y += scrollSpeed * star.speed * dt;
         if (star.y > CANVAS_HEIGHT) {
             star.y = 0;
             star.x = Math.random() * CANVAS_WIDTH;
@@ -366,10 +366,10 @@ function update() {
     });
 
     // Spawn Obstacles
-    obstacleSpawnTimer--;
+    obstacleSpawnTimer -= dt;
     if (obstacleSpawnTimer <= 0) {
         // Constant spawn interval to prevent increasing density near the Moon
-        const baseInterval = 210;
+        const baseInterval = 130;
         // Add some randomness to the interval (±20%)
         obstacleSpawnTimer = baseInterval * (0.8 + Math.random() * 0.4);
 
@@ -379,12 +379,12 @@ function update() {
             w: 30 + Math.random() * 20,
             h: 30 + Math.random() * 20,
             // Vary speed significantly: some slow, some fast
-            speed: scrollSpeed * (0.5 + Math.random() * 0.8)
+            speed: scrollSpeed * (0.8 + Math.random() * 1.2)
         });
     }
 
     // Spawn Fuel
-    if (Math.random() < 0.005) {
+    if (Math.random() < 0.005 * dt) {
         fuelBonuses.push({
             x: Math.random() * (CANVAS_WIDTH - 25),
             y: -50,
@@ -396,7 +396,7 @@ function update() {
     // Update Obstacles
     for (let i = obstacles.length - 1; i >= 0; i--) {
         const obs = obstacles[i];
-        obs.y += obs.speed;
+        obs.y += obs.speed * dt;
 
         // Collision with rocket
         if (checkCollision(rocket, obs, true)) {
@@ -413,7 +413,7 @@ function update() {
     // Update Fuel Bonuses
     for (let i = fuelBonuses.length - 1; i >= 0; i--) {
         const f = fuelBonuses[i];
-        f.y += scrollSpeed * 0.6;
+        f.y += scrollSpeed * 0.8 * dt;
 
         // Collision with rocket
         if (checkCollision(rocket, f, true)) {
@@ -753,11 +753,18 @@ function draw() {
 }
 
 // Main Game Loop
-function gameLoop() {
+let lastTime = 0;
+function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const dt = (timestamp - lastTime) / (1000 / 60); // 1.0 at 60fps
+    lastTime = timestamp;
+
     if (gameState === 'PLAYING' || explosionActive) {
-        update();
+        update(dt);
         draw();
         requestAnimationFrame(gameLoop);
+    } else {
+        lastTime = 0; // Reset for next start
     }
 }
 
