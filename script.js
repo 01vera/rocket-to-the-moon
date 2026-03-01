@@ -379,7 +379,7 @@ function update() {
             w: 30 + Math.random() * 20,
             h: 30 + Math.random() * 20,
             // Vary speed significantly: some slow, some fast
-            speed: scrollSpeed * (0.4 + Math.random() * 0.6)
+            speed: scrollSpeed * (0.5 + Math.random() * 0.8)
         });
     }
 
