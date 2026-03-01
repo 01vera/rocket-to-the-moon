@@ -59,8 +59,13 @@ if (volumeRange) {
 applyMasterVolume();
 
 // Game Constants
-const CANVAS_WIDTH = 400;
-const CANVAS_HEIGHT = 700;
+const BASE_CANVAS_WIDTH = 400;
+const BASE_CANVAS_HEIGHT = 700;
+let CANVAS_WIDTH = BASE_CANVAS_WIDTH;
+let CANVAS_HEIGHT = BASE_CANVAS_HEIGHT;
+let scaleX = 1;
+let scaleY = 1;
+
 const ROCKET_WIDTH = 22;
 const ROCKET_HEIGHT = 60;
 const FUEL_CONSUMPTION_BASE = 0.03;
@@ -109,6 +114,57 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => {
     keys[e.code] = false;
 });
+
+// Touch Controls
+const btnLeft = document.getElementById('btn-left');
+const btnRight = document.getElementById('btn-right');
+const btnBoost = document.getElementById('btn-boost');
+
+if (btnLeft) {
+    btnLeft.addEventListener('pointerdown', (e) => { e.preventDefault(); keys['ArrowLeft'] = true; });
+    btnLeft.addEventListener('pointerup', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
+    btnLeft.addEventListener('pointerleave', (e) => { e.preventDefault(); keys['ArrowLeft'] = false; });
+}
+
+if (btnRight) {
+    btnRight.addEventListener('pointerdown', (e) => { e.preventDefault(); keys['ArrowRight'] = true; });
+    btnRight.addEventListener('pointerup', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
+    btnRight.addEventListener('pointerleave', (e) => { e.preventDefault(); keys['ArrowRight'] = false; });
+}
+
+if (btnBoost) {
+    btnBoost.addEventListener('pointerdown', (e) => { e.preventDefault(); keys['ArrowUp'] = true; });
+    btnBoost.addEventListener('pointerup', (e) => { e.preventDefault(); keys['ArrowUp'] = false; });
+    btnBoost.addEventListener('pointerleave', (e) => { e.preventDefault(); keys['ArrowUp'] = false; });
+}
+
+// Resize Handling
+function resizeCanvas() {
+    const aspectRatio = BASE_CANVAS_WIDTH / BASE_CANVAS_HEIGHT;
+    let newWidth = window.innerWidth;
+    let newHeight = window.innerHeight;
+
+    if (newWidth / newHeight > aspectRatio) {
+        newWidth = newHeight * aspectRatio;
+    } else {
+        newHeight = newWidth / aspectRatio;
+    }
+
+    // Cap at base size for desktop to keep it sharp
+    if (newWidth > BASE_CANVAS_WIDTH && window.innerWidth > BASE_CANVAS_WIDTH) {
+        newWidth = BASE_CANVAS_WIDTH;
+        newHeight = BASE_CANVAS_HEIGHT;
+    }
+
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+
+    scaleX = newWidth / BASE_CANVAS_WIDTH;
+    scaleY = newHeight / BASE_CANVAS_HEIGHT;
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 // Initialize Stars for background
 function initStars() {
@@ -418,7 +474,10 @@ function updateStage() {
 // Draw Logic
 function draw() {
     // Clear Canvas
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.scale(scaleX, scaleY);
 
     // Draw Background Gradient based on progress
     let bgGradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
@@ -689,6 +748,8 @@ function draw() {
         ctx.fill();
         ctx.restore();
     }
+
+    ctx.restore();
 }
 
 // Main Game Loop

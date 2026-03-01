@@ -17,24 +17,28 @@ body {
 
 #game-container {
     position: relative;
-    width: 400px;
-    height: 700px;
+    width: 100vw;
+    height: 100vh;
     background-color: #0a0a0a;
-    border: 2px solid #333;
-    box-shadow: 0 0 50px rgba(0, 212, 255, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
 }
 
 #gameCanvas {
     display: block;
     background: linear-gradient(180deg, #000000 0%, #0a0a2a 100%);
+    max-width: 100%;
+    max-height: 100%;
 }
 
 /* HUD Styles */
 #hud {
     position: absolute;
     top: 0;
-    left: 0;
-    width: 100%;
+    width: 400px;
+    max-width: 100%;
     padding: 15px;
     display: flex;
     justify-content: space-between;
@@ -106,19 +110,28 @@ body {
 /* Volume Control Styles */
 #volume-control {
     position: absolute;
-    bottom: 15px;
-    right: 15px;
+    bottom: 85px; /* Поднял выше, чтобы не мешал кнопкам */
+    width: 400px;
+    max-width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 15px;
+    z-index: 30;
+    pointer-events: none;
+}
+
+#volume-control-inner {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 12px;
-    color: #fff;
-    z-index: 30;
     background: rgba(0, 0, 0, 0.5);
     padding: 5px 12px;
     border-radius: 20px;
     backdrop-filter: blur(5px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: auto;
 }
 
 #volume-control input[type="range"] {
@@ -130,15 +143,65 @@ body {
 #volume-control label {
     opacity: 0.8;
     user-select: none;
+    font-size: 12px;
+    color: #fff;
+}
+
+/* Touch Controls Styles */
+#touch-controls {
+    position: absolute;
+    bottom: 15px;
+    width: 400px;
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    z-index: 30;
+}
+
+#touch-controls button {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-size: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    user-select: none;
+    touch-action: manipulation;
+    transition: all 0.1s ease;
+}
+
+#touch-controls button:active {
+    background: rgba(0, 212, 255, 0.4);
+    transform: scale(0.9);
+    border-color: #00d4ff;
+}
+
+/* Hide touch controls on desktop if needed, but here we keep them for accessibility */
+@media (hover: hover) and (pointer: fine) {
+    /* Optional: make them more subtle on desktop */
+    #touch-controls {
+        opacity: 0.5;
+        transition: opacity 0.3s;
+    }
+    #touch-controls:hover {
+        opacity: 1;
+    }
 }
 
 /* Overlay Styles */
 .overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    width: 400px;
+    max-width: 100%;
+    height: 700px;
+    max-height: 100%;
     background-color: rgba(0, 0, 0, 0.85);
     display: flex;
     flex-direction: column;
