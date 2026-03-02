@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Rocket to the Moon</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -19,6 +19,7 @@
             <div class="hud-item score-container">
                 <div id="current-score">Очки: 0</div>
                 <div id="high-score">Рекорд: 0</div>
+                <div id="ammo-display">Боезапас: 10</div>
             </div>
             <div class="hud-item stage-container">
                 <div id="volume-control">
@@ -37,7 +38,7 @@
         <!-- Touch Controls -->
         <div id="touch-controls">
             <button id="btn-left">←</button>
-            <button id="btn-boost">↑</button>
+            <button id="btn-boost">☄</button>
             <button id="btn-right">→</button>
         </div>
 
@@ -49,7 +50,7 @@
             <h1>Rocket to the Moon</h1>
             <p>Управление:</p>
             <p>← → : Движение влево/вправо</p>
-            <p>↑ : Ускорение (тратит больше топлива)</p>
+            <p>↑ : Выстрел (тратит боезапас)</p>
             <button id="start-btn" class="game-btn">ИГРАТЬ</button>
         </div>
 

@@ -34,6 +34,7 @@ const fuelPickupSound = new Audio('sounds/fuel.mp3');
 const crashSound = new Audio('sounds/crash.mp3');
 const gameOverSound = new Audio('sounds/gameover.mp3');
 const winSound = new Audio('sounds/win.mp3');
+const shotSound = new Audio('sounds/shot.mp3');
 
 // Volume Control
 let masterVolume = 0.7;
@@ -45,6 +46,7 @@ function applyMasterVolume() {
     crashSound.volume = 0.8 * masterVolume;
     gameOverSound.volume = 0.6 * masterVolume;
     winSound.volume = 0.7 * masterVolume;
+    shotSound.volume = 0.4 * masterVolume;
 }
 
 if (volumeRange) {
@@ -58,6 +60,8 @@ if (volumeRange) {
 // Initial volume application
 applyMasterVolume();
 
+const ammoDisplayEl = document.getElementById('ammo-display');
+
 // Game Constants
 const BASE_CANVAS_WIDTH = 400;
 const BASE_CANVAS_HEIGHT = 700;
@@ -69,17 +73,25 @@ let scaleY = 1;
 const ROCKET_WIDTH = 22;
 const ROCKET_HEIGHT = 60;
 const FUEL_CONSUMPTION_BASE = 0.03;
-const FUEL_CONSUMPTION_BOOST = 0.1;
-const BASE_SCROLL_SPEED = 1.8;
-const BOOST_SCROLL_SPEED = 4.5;
+const BASE_SCROLL_SPEED = 2.2; // Slightly increased base speed since no boost
 const WIN_DISTANCE = 4000; // СОКРАЩЕНО ЕЩЕ: Было 6000
 // Game State
 let gameState = 'START'; // START, PLAYING, GAMEOVER, WIN
 let score = 0;
 let highScore = localStorage.getItem('rocketHighScore') || 0;
 let fuel = 100;
+let ammo = 10;
 let progress = 0;
 let scrollSpeed = BASE_SCROLL_SPEED;
+
+// Shooting
+let bullets = [];
+let ammoBonuses = [];
+const BULLET_WIDTH = 4;
+const BULLET_HEIGHT = 12;
+const BULLET_SPEED = 10;
+let lastShootTime = 0;
+const SHOOT_COOLDOWN = 250; // ms
 
 // Explosion State
 let explosionActive = false;
@@ -91,7 +103,7 @@ let obstacleSpawnTimer = 0;
 // Rocket Object
 const rocket = {
     x: CANVAS_WIDTH / 2 - ROCKET_WIDTH / 2,
-    y: CANVAS_HEIGHT - 100,
+    y: CANVAS_HEIGHT - 250,
     w: ROCKET_WIDTH,
     h: ROCKET_HEIGHT,
     speed: 3.5,
@@ -108,6 +120,9 @@ let stars = [];
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowUp' && !keys['ArrowUp']) {
+        shoot();
+    }
     keys[e.code] = true;
 });
 
@@ -133,9 +148,31 @@ if (btnRight) {
 }
 
 if (btnBoost) {
-    btnBoost.addEventListener('pointerdown', (e) => { e.preventDefault(); keys['ArrowUp'] = true; });
-    btnBoost.addEventListener('pointerup', (e) => { e.preventDefault(); keys['ArrowUp'] = false; });
-    btnBoost.addEventListener('pointerleave', (e) => { e.preventDefault(); keys['ArrowUp'] = false; });
+    btnBoost.addEventListener('pointerdown', (e) => { 
+        e.preventDefault(); 
+        shoot();
+    });
+}
+
+function shoot() {
+    if (gameState !== 'PLAYING' || ammo <= 0) return;
+    
+    const now = Date.now();
+    if (now - lastShootTime < SHOOT_COOLDOWN) return;
+    
+    lastShootTime = now;
+    ammo--;
+    
+    bullets.push({
+        x: rocket.x + rocket.w / 2 - BULLET_WIDTH / 2,
+        y: rocket.y,
+        w: BULLET_WIDTH,
+        h: BULLET_HEIGHT,
+        speed: BULLET_SPEED
+    });
+    
+    shotSound.currentTime = 0;
+    shotSound.play().catch(e => {});
 }
 
 // Resize Handling
@@ -198,10 +235,14 @@ function startGame() {
     gameState = 'PLAYING';
     score = 0;
     fuel = 100;
+    ammo = 10;
     progress = 0;
     obstacles = [];
     fuelBonuses = [];
+    bullets = [];
+    ammoBonuses = [];
     rocket.x = CANVAS_WIDTH / 2 - ROCKET_WIDTH / 2;
+    rocket.y = CANVAS_HEIGHT - 250;
     rocket.dx = 0;
     obstacleSpawnTimer = 60; // Start with a small delay
     
@@ -325,8 +366,8 @@ function update(dt = 1) {
         rocket.dx = 0;
     }
 
-    rocket.isBoosting = keys['ArrowUp'];
-    scrollSpeed = rocket.isBoosting ? BOOST_SCROLL_SPEED : BASE_SCROLL_SPEED;
+    rocket.isBoosting = false;
+    scrollSpeed = BASE_SCROLL_SPEED;
 
     // Move Rocket
     rocket.x += rocket.dx * dt;
@@ -336,7 +377,7 @@ function update(dt = 1) {
     if (rocket.x + rocket.w > CANVAS_WIDTH) rocket.x = CANVAS_WIDTH - rocket.w;
 
     // Fuel Logic
-    const consumption = (rocket.isBoosting ? FUEL_CONSUMPTION_BOOST : FUEL_CONSUMPTION_BASE) * dt;
+    const consumption = FUEL_CONSUMPTION_BASE * dt;
     fuel -= consumption;
     if (fuel <= 0) {
         fuel = 0;
@@ -369,7 +410,7 @@ function update(dt = 1) {
     obstacleSpawnTimer -= dt;
     if (obstacleSpawnTimer <= 0) {
         // Constant spawn interval to prevent increasing density near the Moon
-        const baseInterval = 130;
+        const baseInterval = 100;
         // Add some randomness to the interval (±20%)
         obstacleSpawnTimer = baseInterval * (0.8 + Math.random() * 0.4);
 
@@ -391,6 +432,38 @@ function update(dt = 1) {
             w: 25,
             h: 25
         });
+    }
+
+    // Spawn Ammo
+    if (Math.random() < 0.003 * dt) {
+        ammoBonuses.push({
+            x: Math.random() * (CANVAS_WIDTH - 25),
+            y: -50,
+            w: 25,
+            h: 25
+        });
+    }
+
+    // Update Bullets
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.y -= b.speed * dt;
+        
+        if (b.y < -20) {
+            bullets.splice(i, 1);
+            continue;
+        }
+        
+        // Collision with obstacles
+        for (let j = obstacles.length - 1; j >= 0; j--) {
+            const obs = obstacles[j];
+            if (checkCollision(b, obs)) {
+                obstacles.splice(j, 1);
+                bullets.splice(i, 1);
+                score += 20;
+                break;
+            }
+        }
     }
 
     // Update Obstacles
@@ -431,9 +504,31 @@ function update(dt = 1) {
         }
     }
 
+    // Update Ammo Bonuses
+    for (let i = ammoBonuses.length - 1; i >= 0; i--) {
+        const a = ammoBonuses[i];
+        a.y += scrollSpeed * 0.7 * dt;
+
+        // Collision with rocket
+        if (checkCollision(rocket, a, true)) {
+            ammo = Math.min(20, ammo + 5);
+            score += 30;
+            fuelPickupSound.currentTime = 0;
+            fuelPickupSound.play().catch(e => {});
+            ammoBonuses.splice(i, 1);
+            continue;
+        }
+
+        // Remove if off screen
+        if (a.y > CANVAS_HEIGHT) {
+            ammoBonuses.splice(i, 1);
+        }
+    }
+
     // Update HUD
     fuelBarFill.style.width = `${fuel}%`;
     currentScoreEl.innerText = `Очки: ${Math.floor(score)}`;
+    ammoDisplayEl.innerText = `Боезапас: ${ammo}`;
     
     // Update Distance Bar
     const distPercent = Math.min(100, (progress / WIN_DISTANCE) * 100);
@@ -577,14 +672,89 @@ function draw() {
     }
 
     // Draw Fuel Bonuses
-    ctx.fillStyle = "#ec9f05";
     fuelBonuses.forEach(f => {
-        // Draw a simple fuel canister shape
-        ctx.fillRect(f.x, f.y, f.w, f.h);
+        ctx.save();
+        ctx.translate(f.x + f.w / 2, f.y + f.h / 2);
+        
+        // Barrel Body
+        const barrelGradient = ctx.createLinearGradient(-f.w / 2, 0, f.w / 2, 0);
+        barrelGradient.addColorStop(0, "#d35400");
+        barrelGradient.addColorStop(0.5, "#e67e22");
+        barrelGradient.addColorStop(1, "#a04000");
+        ctx.fillStyle = barrelGradient;
+        
+        // Main cylinder
+        ctx.beginPath();
+        ctx.roundRect(-f.w / 2, -f.h / 2, f.w, f.h, 4);
+        ctx.fill();
+        
+        // Top and Bottom Lids (ellipses)
+        ctx.fillStyle = "#a04000";
+        ctx.beginPath();
+        ctx.ellipse(0, -f.h / 2, f.w / 2, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(0, f.h / 2, f.w / 2, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Horizontal Bands (Ribs)
+        ctx.strokeStyle = "rgba(0,0,0,0.3)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-f.w / 2, -f.h / 6);
+        ctx.lineTo(f.w / 2, -f.h / 6);
+        ctx.moveTo(-f.w / 2, f.h / 6);
+        ctx.lineTo(f.w / 2, f.h / 6);
+        ctx.stroke();
+        
+        // Fuel Symbol (Lightning bolt)
+        ctx.fillStyle = "#f1c40f";
+        ctx.beginPath();
+        ctx.moveTo(-2, -6);
+        ctx.lineTo(4, -6);
+        ctx.lineTo(0, 2);
+        ctx.lineTo(4, 2);
+        ctx.lineTo(-2, 10);
+        ctx.lineTo(1, 2);
+        ctx.lineTo(-3, 2);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
+    });
+
+    // Draw Ammo Bonuses
+    ammoBonuses.forEach(a => {
+        ctx.save();
+        ctx.translate(a.x + a.w / 2, a.y + a.h / 2);
+        
+        // Box Body
+        ctx.fillStyle = "#27ae60";
+        ctx.beginPath();
+        ctx.roundRect(-a.w / 2, -a.h / 2, a.w, a.h, 4);
+        ctx.fill();
+        
+        // Symbol
         ctx.fillStyle = "white";
-        ctx.font = "bold 12px Arial";
-        ctx.fillText("F", f.x + 8, f.y + 18);
-        ctx.fillStyle = "#ec9f05";
+        ctx.font = "bold 16px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("★", 0, 0);
+        
+        ctx.restore();
+    });
+
+    // Draw Bullets
+    ctx.fillStyle = "#f1c40f";
+    bullets.forEach(b => {
+        ctx.beginPath();
+        ctx.roundRect(b.x, b.y, b.w, b.h, 2);
+        ctx.fill();
+        // Glow
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#f1c40f";
+        ctx.fill();
+        ctx.shadowBlur = 0;
     });
 
     // Draw Obstacles (Asteroids)
@@ -642,7 +812,7 @@ function draw() {
     
     // Flame
     if (gameState === 'PLAYING') {
-        const flameHeight = rocket.isBoosting ? 40 : 20;
+        const flameHeight = 20;
         const flameGradient = ctx.createLinearGradient(0, rocket.h / 2, 0, rocket.h / 2 + flameHeight);
         flameGradient.addColorStop(0, '#ff4e00');
         flameGradient.addColorStop(1, 'transparent');
