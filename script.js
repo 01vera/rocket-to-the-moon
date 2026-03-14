@@ -409,8 +409,11 @@ function update(dt = 1) {
     // Spawn Obstacles
     obstacleSpawnTimer -= dt;
     if (obstacleSpawnTimer <= 0) {
-        // Constant spawn interval to prevent increasing density near the Moon
-        const baseInterval = 100;
+        // Dynamic spawn interval: starts at 100 and becomes denser (80) as progress increases
+        const startInterval = 100;
+        const endInterval = 80;
+        const baseInterval = startInterval - (startInterval - endInterval) * Math.min(1, progress / WIN_DISTANCE);
+        
         // Add some randomness to the interval (±20%)
         obstacleSpawnTimer = baseInterval * (0.8 + Math.random() * 0.4);
 

@@ -1,0 +1,5 @@
+{
+  "name": "Rocket to the Moon",
+  "description": "A vertical scroller arcade game where you pilot a rocket to reach the moon while avoiding asteroids and collecting fuel.",
+  "requestFramePermissions": []
+}
