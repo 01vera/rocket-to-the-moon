@@ -26,6 +26,7 @@ const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
+const touchControls = document.getElementById('touch-controls');
 
 // Audio Objects
 const rocketAmbient = new Audio('sounds/ambient.mp3');
@@ -249,6 +250,7 @@ function startGame() {
     startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     winScreen.classList.add('hidden');
+    touchControls.classList.remove('hidden');
     
     highScoreEl.innerText = `Рекорд: ${highScore}`;
     
@@ -285,6 +287,9 @@ function gameOver(reason) {
     
     bestScoreEl.innerText = highScore;
     
+    // Hide touch controls
+    touchControls.classList.add('hidden');
+    
     // Показываем экран с задержкой, если был взрыв, чтобы его было видно
     if (reason === 'collision') {
         setTimeout(() => {
@@ -320,6 +325,7 @@ function handleWin() {
         
         winBestScoreEl.innerText = highScore;
         winScreen.classList.remove('hidden');
+        touchControls.classList.add('hidden');
     }, 1500); // 1.5 second delay
 }
 
@@ -944,11 +950,12 @@ function gameLoop(timestamp) {
 // Initial Setup
 initStars();
 highScoreEl.innerText = `Рекорд: ${highScore}`;
+touchControls.classList.add('hidden');
 
 // Event Listeners for buttons
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', startGame);
-restartWinBtn.addEventListener('click', startGame);
+startBtn.addEventListener('pointerdown', startGame);
+restartBtn.addEventListener('pointerdown', startGame);
+restartWinBtn.addEventListener('pointerdown', startGame);
 
 // Initial Draw
 draw();
